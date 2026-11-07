@@ -1,0 +1,149 @@
+erDiagram
+    %% ===== CATALOGO =====
+    raza {
+        INT id PK
+        VARCHAR(50) nombre UK
+    }
+    edificio {
+        INT id PK
+        INT raza_id FK
+        CHAR(4) codigo_objeto UK
+        VARCHAR(100) nombre UK
+        SMALLINT costo_oro
+        SMALLINT costo_madera
+        SMALLINT tiempo_segundos
+        SMALLINT comida_proporcionada
+    }
+    unidad {
+        INT id PK
+        INT edificio_origen_id FK "donde se entrena"
+        CHAR(4) codigo_objeto UK
+        VARCHAR(100) nombre UK
+        SMALLINT costo_oro
+        SMALLINT costo_madera
+        SMALLINT tiempo_segundos
+        SMALLINT comida_consumida
+        BOOLEAN es_trabajador
+        BOOLEAN es_heroe
+    }
+    mejora {
+        INT id PK
+        INT edificio_origen_id FK "donde se investiga"
+        CHAR(4) codigo_objeto UK
+        VARCHAR(100) nombre UK
+        SMALLINT costo_oro
+        SMALLINT costo_madera
+        SMALLINT tiempo_segundos
+    }
+    requisito_edificio {
+        INT edificio_id PK, FK "el que exige"
+        INT edificio_requerido_id PK, FK
+    }
+    requisito_unidad {
+        INT unidad_id PK, FK "la que exige"
+        INT edificio_requerido_id PK, FK
+    }
+    requisito_mejora {
+        INT id PK
+        INT mejora_id FK "la que exige"
+        INT edificio_requerido_id FK "opcional"
+        INT mejora_requerida_id FK "opcional"
+    }
+    %% ===== BUILDS =====
+    build_paso {
+        INT id PK
+        INT build_order_id FK
+        INT edificio_id FK "opcional"
+        INT unidad_id FK "opcional"
+        INT mejora_id FK "opcional"
+        SMALLINT numero_orden
+        SMALLINT tiempo_objetivo_segundos
+        VARCHAR(255) nota "opcional"
+    }
+    build_order {
+        INT id PK
+        INT usuario_id FK "autor"
+        INT raza_id FK
+        VARCHAR(150) titulo
+        TEXT descripcion "opcional"
+        ENUM estado "borrador, publicado"
+        ENUM origen "manual, repeticion"
+        INT cantidad_descargas "default 0"
+        INT version_bloqueo
+        DATETIME creado_en
+    }
+    build_version {
+        INT id PK
+        INT build_order_id FK
+        INT parche_id FK
+        SMALLINT numero_version
+        JSON pasos_json
+        DATETIME publicada_en
+    }
+    parche {
+        INT id PK
+        VARCHAR(20) version UK
+        DATE lanzado_en
+    }
+    %% ===== LOGIN =====
+    usuario {
+        INT id PK
+        VARCHAR(50) nombre_usuario UK
+        VARCHAR(150) correo UK
+        VARCHAR(255) hash_contrasena
+        DATETIME registrado_en
+    }
+    usuario_rol {
+        INT usuario_id PK, FK
+        INT rol_id PK, FK
+    }
+    rol {
+        INT id PK
+        VARCHAR(20) nombre UK "admin o usuario"
+    }
+    %% ===== CONFIG Y AUDITORIA =====
+    tramo_upkeep {
+        INT id PK
+        SMALLINT comida_minima
+        SMALLINT comida_maxima
+        DECIMAL porcentaje_ingreso_oro "5,2"
+    }
+    config_validacion {
+        INT id PK
+        VARCHAR(80) nombre_parametro UK
+        DECIMAL valor_parametro "10,3"
+        VARCHAR(255) descripcion "opcional"
+    }
+    auditoria {
+        BIGINT id PK
+        INT usuario_id FK "opcional"
+        VARCHAR(64) tabla_afectada
+        BIGINT registro_afectado_id
+        ENUM accion "insertar, actualizar, eliminar, publicacion_fallida"
+        JSON valores_anteriores "opcional"
+        JSON valores_nuevos "opcional"
+        DATETIME ocurrido_en
+    }
+
+    %% ===== RELACIONES =====
+    raza ||--o{ edificio : "1:N posee"
+    raza ||--o{ build_order : "1:N clasifica"
+    edificio ||--o{ unidad : "1:N entrena"
+    edificio ||--o{ mejora : "1:N investiga"
+    edificio ||--o{ requisito_edificio : "1:N exige"
+    edificio ||--o{ requisito_edificio : "1:N es exigido por"
+    edificio ||--o{ requisito_unidad : "1:N es exigido por"
+    edificio |o--o{ requisito_mejora : "1:N es exigido por"
+    edificio |o--o{ build_paso : "1:N se usa en"
+    unidad ||--o{ requisito_unidad : "1:N exige"
+    unidad |o--o{ build_paso : "1:N se usa en"
+    mejora ||--o{ requisito_mejora : "1:N exige"
+    mejora |o--o{ requisito_mejora : "1:N es exigida por"
+    mejora |o--o{ build_paso : "1:N se usa en"
+    build_order ||--o{ build_paso : "1:N contiene"
+    usuario ||--o{ build_order : "1:N posee"
+    build_order ||--o{ build_version : "1:N guarda"
+    parche ||--o{ build_version : "1:N valida"
+    usuario ||--o{ usuario_rol : "1:N tiene"
+    usuario |o--o{ auditoria : "1:N origina"
+    rol ||--o{ usuario_rol : "1:N se asigna a"
