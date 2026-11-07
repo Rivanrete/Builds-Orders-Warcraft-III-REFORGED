@@ -27,13 +27,10 @@ Los build orders de Warcraft III se comparten en foros y videos sin validar: muc
 
 ## Tecnologías previstas
 
-- **Base de datos:** MySQL 8.4. La lógica (validación y auditoría) vive en procedimientos almacenados y triggers.
-- **Backend:** Node.js 20+ con el framework Express. Acceso a MySQL con `mysql2`, sin ORM: solo llama a los procedimientos.
-- **Autenticación:** contraseñas con `bcryptjs` y sesión con tokens JWT (`jsonwebtoken`), sin tabla de sesiones.
-- **Repeticiones:** `w3gjs` (MIT, mantenido) lee el `.w3g` y extrae los pasos. La repetición no se guarda.
-- **Frontend:** React (librería de interfaces, con Vite).
-- **Despliegue:** Railway (backend y MySQL en el mismo proyecto) o una máquina virtual con Docker. (Pendiente) confirmar el plan gratuito vigente.
-- **Apoyo:** Git y GitHub, MySQL Workbench, Vitest para pruebas y OpenAPI con Swagger UI para documentar la API.
+- **Base de datos:** MySQL 8.4
+- **Backend:** Node.js con el framework Express
+- **Frontend:** React
+- **Lenguaje:** JavaScript (backend y frontend)
 
 ## Autor y licencia
 
