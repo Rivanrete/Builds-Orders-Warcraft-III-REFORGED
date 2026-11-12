@@ -10,27 +10,27 @@
 
 ## Catálogo
 
-**`parche`**: versión del juego (por ejemplo 1.36.1) y su fecha de lanzamiento. Solo la usa `build_version`, que guarda con qué parche se validó cada versión publicada. El catálogo (raza, edificio, unidad, mejora) representa siempre el parche vigente. Un build queda obsoleto cuando el parche de su `build_version` no es el vigente (el de `lanzado_en` más reciente).
+**`parche`**: versión del juego (el parche vigente es 3.0.1, lanzado el 19 de octubre de 2026) y su fecha de lanzamiento. Solo la usa `build_version`, que guarda con qué parche se validó cada versión publicada. El catálogo (raza, edificio, unidad, mejora) representa siempre el parche vigente. Un build queda obsoleto cuando el parche de su `build_version` no es el vigente (el de `lanzado_en` más reciente).
 
 **`raza`**: Humanos, Orcos, etc. Un build pertenece a una sola raza.
 
-**`edificio`**: edificios de una raza. Tiene costo en oro y madera, tiempo de construcción y la comida que aporta (granjas y salas principales). Lleva el `codigo_objeto` del juego (4 letras), único dentro de la tabla.
+**`edificio`**: edificios de una raza. Tiene costo en oro y madera, tiempo de construcción y la comida que aporta (granjas y salas principales). Lleva el `codigo_objeto` del juego (4 letras), único dentro de la tabla. El nombre es único solo dentro de cada raza (`raza_id` + `nombre`), porque Humanos y Orcos comparten "Cuartel". En los edificios que se mejoran sobre otro (Fuerte, Castillo, Bastión, Fortaleza y las torres de guardia, de cañón y arcana) el costo es el del paso, es decir el total del juego menos el del edificio anterior; el tiempo es el de la mejora y la comida es la del edificio ya mejorado.
 
-**`unidad`**: unidades, trabajadores y héroes. Se entrena en un edificio (`edificio_origen_id`), de donde se deduce su raza. Tiene costo, tiempo de entrenamiento, comida consumida, `es_trabajador` y `es_heroe`. Los héroes se entrenan en el Altar; la regla de límite por Altar se valida en `sp_publicar_build`. También tiene `codigo_objeto`, único dentro de la tabla.
+**`unidad`**: unidades, trabajadores y héroes. Se entrena en un edificio (`edificio_origen_id`), de donde se deduce su raza. Tiene costo, tiempo de entrenamiento, comida consumida, `es_trabajador` y `es_heroe`. Los héroes se entrenan en el Altar; la regla de límite por Altar la validará `sp_publicar_build`, pendiente de la siguiente etapa. También tiene `codigo_objeto`, único dentro de la tabla.
 
-**`mejora`**: investigaciones y mejoras. Se investiga en un edificio (`edificio_origen_id`). Tiene costo y tiempo de investigación.
+**`mejora`**: investigaciones y mejoras. Se investiga en un edificio (`edificio_origen_id`). Tiene costo y tiempo de investigación. Cada nivel es una fila: el juego usa el mismo `codigo_objeto` en todos los niveles (por ejemplo `Rhme` en las tres Espadas forjadas) y cada nivel tiene su propio nombre, costo y tiempo, por eso la clave única es (`codigo_objeto`, `nivel`). El nombre no es único: "Mochila" existe para Humanos y Orcos con códigos distintos.
 
 **`requisito_edificio`**: dice qué edificio hace falta para construir otro edificio. Es una tabla puente: la relación lógica edificio-edificio es N:N (un edificio exige varios y es exigido por varios) y se dibuja como dos relaciones 1:N. Permite armar la cadena Castillo → Cuartel → Granja con una consulta recursiva.
 
 **`requisito_unidad`**: dice qué edificio debe estar terminado para entrenar una unidad. Es una tabla puente: la relación lógica unidad-edificio es N:N y se dibuja como dos relaciones 1:N.
 
-**`requisito_mejora`**: dice qué edificio, qué mejora anterior o ambos hacen falta para investigar una mejora. Al menos uno de los dos debe venir lleno. Es una tabla puente: la relación lógica mejora-edificio y mejora-mejora es N:N y se dibuja como relaciones 1:N.
+**`requisito_mejora`**: dice qué edificio, qué mejora anterior o ambos hacen falta para investigar una mejora. Al menos uno de los dos debe venir lleno. Como cada nivel es una fila de `mejora`, el nivel 2 exige el nivel 1 y el edificio que pida el juego para ese nivel. Es una tabla puente: la relación lógica mejora-edificio y mejora-mejora es N:N y se dibuja como relaciones 1:N.
 
 ## Builds
 
 **`build_order`**: un build de un usuario para una raza. Tiene `estado` (borrador o publicado) y `origen` (armado manual o importado de una repetición). `version_bloqueo` sirve para detectar ediciones simultáneas. `cantidad_descargas` (entero, empieza en 0) se incrementa de forma atómica en cada descarga: sirve para el ranking y para la prueba de concurrencia. Un build publicado no se modifica.
 
-**`build_paso`**: cada paso del build en orden de tiempo. Apunta a un edificio, una unidad o una mejora (solo uno) y guarda el segundo objetivo y una nota opcional.
+**`build_paso`**: cada paso del build en orden de tiempo. Apunta a un edificio, una unidad o una mejora (solo uno) y guarda el tiempo objetivo en segundos y una nota opcional.
 
 **`build_version`**: copia congelada de los pasos en el momento de publicar (en JSON), con el parche vigente y el número de versión. Así el build publicado no cambia aunque el catálogo se actualice.
 
@@ -38,13 +38,13 @@
 
 **`tramo_upkeep`**: tramos de comida usada con el porcentaje de ingreso de oro que corresponde (upkeep). Se usan en la simulación de la economía.
 
-**`config_validacion`**: parámetros de `sp_publicar_build` como filas nombre-valor: tolerancias, tasa de recolección por trabajador y umbrales del semáforo. Se pueden ajustar sin tocar el código.
+**`config_validacion`**: parámetros de validación como filas nombre-valor, que se pueden ajustar sin tocar el código. Por ahora tiene la capacidad de carga por viaje y los recursos iniciales; la tolerancia de tiempo, la tasa de recolección por trabajador y los umbrales del semáforo quedan pendientes de la siguiente etapa.
 
 **`auditoria`**: registro de cambios en builds y pasos (valores anteriores y nuevos en JSON) y de los intentos fallidos de publicación. El usuario es opcional por si el cambio lo hace el sistema.
 
 ## Vista
 
-**`v_catalogo_codigo`** (vista, no es una tabla, por eso no está en el diagrama): une `edificio`, `unidad` y `mejora` en una sola lista con las columnas `tipo_objeto` (`edificio`, `unidad` o `mejora`), `objeto_id`, `codigo_objeto` y `nombre`. El importador de repeticiones `.w3g` busca cada código en este único lugar para saber qué objeto es. En el juego los códigos de 4 letras no se repiten entre edificios, unidades y mejoras, pero la base de datos solo garantiza la unicidad dentro de cada tabla; si el catálogo trajera un código repetido entre tablas, la vista lo mostraría dos veces.
+**`v_catalogo_codigo`** (vista, no es una tabla, por eso no está en el diagrama; pendiente de la siguiente etapa, todavía no existe en `db/`): une `edificio`, `unidad` y `mejora` en una sola lista con las columnas `tipo_objeto` (`edificio`, `unidad` o `mejora`), `objeto_id`, `codigo_objeto` y `nombre`. El importador de repeticiones `.w3g` busca cada código en este único lugar para saber qué objeto es. En el juego los códigos de 4 letras no se repiten entre edificios, unidades y mejoras, pero la base de datos solo garantiza la unicidad dentro de cada tabla; si el catálogo trajera un código repetido entre tablas, la vista lo mostraría dos veces.
 
 ## Cómo se llegó a este diseño
 
@@ -56,3 +56,4 @@
 - Se agregaron `rol` y `usuario_rol` para el login; los tokens JWT no se guardan en la base de datos.
 - Se agregó `parche` (solo en `build_version`): así se sabe qué builds quedaron obsoletos.
 - Se agregaron `codigo_objeto`, `origen`, `v_catalogo_codigo`, `es_heroe` y `cantidad_descargas`: importar repeticiones, límite de héroes por Altar y ranking por descargas.
+- Se agregó `mejora.nivel` y la unicidad pasó a (`codigo_objeto`, `nivel`) en `mejora` y a (`raza_id`, `nombre`) en `edificio`: el juego repite el código en cada nivel de una mejora y repite nombres entre razas.

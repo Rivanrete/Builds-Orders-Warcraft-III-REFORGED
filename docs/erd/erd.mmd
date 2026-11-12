@@ -6,9 +6,9 @@ erDiagram
     }
     edificio {
         INT id PK
-        INT raza_id FK
+        INT raza_id FK, UK "junto con nombre"
         CHAR(4) codigo_objeto UK
-        VARCHAR(100) nombre UK
+        VARCHAR(100) nombre UK "junto con raza_id"
         SMALLINT costo_oro
         SMALLINT costo_madera
         SMALLINT tiempo_segundos
@@ -29,8 +29,9 @@ erDiagram
     mejora {
         INT id PK
         INT edificio_origen_id FK "donde se investiga"
-        CHAR(4) codigo_objeto UK
-        VARCHAR(100) nombre UK
+        CHAR(4) codigo_objeto UK "junto con nivel"
+        SMALLINT nivel UK "default 1"
+        VARCHAR(100) nombre
         SMALLINT costo_oro
         SMALLINT costo_madera
         SMALLINT tiempo_segundos
